@@ -276,10 +276,25 @@ public final class Compiler {
                 .setObfuscated(obfuscated)
                 .setStrict(strictMode)
                 .build();
-        teavm.setOptimizationLevel(TeaVMOptimizationLevel.ADVANCED);
+        var optimization = JSObjects.isUndefined(options.getOptimization()) || options.getOptimization() == null
+                ? "advanced" : options.getOptimization().stringValue();
+        switch (optimization) {
+            case "simple":
+                teavm.setOptimizationLevel(TeaVMOptimizationLevel.SIMPLE);
+                break;
+            default:
+                teavm.setOptimizationLevel(TeaVMOptimizationLevel.ADVANCED);
+        }
         new JSOPlugin().install(teavm);
         new PlatformPlugin().install(teavm);
         new JCLPlugin().install(teavm);
+        // Without these, java.text / Formatter code that needs locale data (%.2f, DecimalFormat)
+        // dereferences a null at run time because no CLDR data is linked in.
+        // (TeaVM.getProperties() returns a copy, so the whole object has to be replaced.)
+        var properties = new java.util.Properties();
+        properties.setProperty("java.util.Locale.available", "en");
+        properties.setProperty("java.util.Locale.default", "en_US");
+        teavm.setProperties(properties);
         teavm.setEntryPoint(mainClass);
         target.setObfuscated(false);
         target.setDebugInfoLocation(WasmDebugInfoLocation.EMBEDDED);
