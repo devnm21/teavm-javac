@@ -131,6 +131,12 @@ public class StdlibConverter extends ClassVisitor {
             return null;
         }
         name = methodRenames.getOrDefault(name + desc, name);
+        // The JDK declares Iterator.remove() as a default method; TeaVM's class library makes it
+        // abstract, which would force every user-written Iterator to implement it.
+        if (className != null && className.equals("java/util/Iterator") && name.equals("remove")
+                && desc.equals("()V")) {
+            access &= ~Opcodes.ACC_ABSTRACT;
+        }
         desc = renameMethodDesc(desc);
         if (!emittedMethods.add(name + desc)) {
             return null;
@@ -150,6 +156,24 @@ public class StdlibConverter extends ClassVisitor {
     @Override
     public AnnotationVisitor visitAnnotation(String desc, boolean visible) {
         return super.visitAnnotation(desc, visible);
+    }
+
+    // Member classes (Map.Entry, AbstractMap.SimpleEntry, Thread.State, ...) are only discoverable by
+    // javac through the InnerClasses attribute, which must therefore use the renamed class names.
+    @Override
+    public void visitInnerClass(String name, String outerName, String innerName, int access) {
+        if (!visible) {
+            return;
+        }
+        super.visitInnerClass(rename(name), outerName != null ? rename(outerName) : null, innerName, access);
+    }
+
+    @Override
+    public void visitOuterClass(String owner, String name, String desc) {
+        if (!visible) {
+            return;
+        }
+        super.visitOuterClass(rename(owner), name, desc != null ? renameMethodDesc(desc) : null);
     }
 
     class FieldVisitorImpl extends FieldVisitor {

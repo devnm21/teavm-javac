@@ -227,6 +227,11 @@ public final class Worker {
             public JSBoolean getObfuscated() {
                 return JSBoolean.valueOf(true);
             }
+
+            @Override
+            public JSString getOptimization() {
+                return JSString.valueOf("advanced");
+            }
         };
         var reg = compiler.onDiagnostic(diagnostic -> handleTeaVMDiagnostic((TeaVMDiagnostic) diagnostic, requestId));
         var result = compiler.generateWebAssembly(options);

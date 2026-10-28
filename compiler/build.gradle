@@ -40,10 +40,27 @@ dependencies {
 sourceSets {
     classlibEmu {
     }
+    // THRIVE: patched copies of a few TeaVM class-library classes, built over the upstream jar.
+    classlibOverlay {
+    }
+}
+
+dependencies {
+    classlibOverlayCompileOnly libs.teavm.classlib
+    classlibOverlayCompileOnly libs.teavm.core
+    classlibOverlayCompileOnly libs.teavm.interop
+    classlibOverlayCompileOnly libs.teavm.platform
+    classlibOverlayCompileOnly libs.teavm.jso.impl
 }
 
 compileJava {
     options.compilerArgs.addAll("--limit-modules", "java.base")
+}
+
+tasks.named("compileClasslibOverlayJava") {
+    options.release = 17
+    // TeaVM's class library avoids invokedynamic string concatenation
+    options.compilerArgs.add("-XDstringConcat=inline")
 }
 
 teavm {
@@ -86,6 +103,13 @@ def unpackTeaVMClasslib = tasks.register("unpackTeaVMClassLib", Copy) {
         configurations.classlibInput.collect { zipTree(it) }
     }
     exclude "META-INF/MANIFEST.MF"
+    exclude "org/teavm/classlib/java/text/TDecimalFormatSymbols.class"
+    exclude 'org/teavm/classlib/java/text/TDecimalFormatSymbols$*.class'
+    exclude "org/teavm/classlib/java/lang/TMath.class"
+    exclude 'org/teavm/classlib/java/lang/TMath$*.class'
+    exclude "org/teavm/classlib/java/util/TRandom.class"
+    exclude "org/teavm/classlib/java/util/TFormatter.class"
+    exclude 'org/teavm/classlib/java/util/TFormatter$*.class'
     into classLibTmpDir
 }
 
@@ -104,7 +128,10 @@ def repackCldr = tasks.register("repackCldr", Zip) {
 }
 
 def prepareTeaVMClassLib = tasks.register("prepareTeaVMClassLib", Copy) {
-    dependsOn unpackTeaVMClasslib, repackCldr
+    // first `from` wins: the overlay classes replace the upstream ones
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    dependsOn unpackTeaVMClasslib, repackCldr, classlibOverlayClasses
+    from(sourceSets.classlibOverlay.output.classesDirs)
     from(unpackTeaVMClasslib) {
         exclude "org/teavm/classlib/impl/unicode/cldr-json.zip"
     }

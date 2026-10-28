@@ -33,4 +33,8 @@ public interface WebAssemblyCompilationOptions extends JSObject {
 
     @JSProperty
     JSBoolean getObfuscated();
+
+    /** "simple", "balanced" or "advanced" (default). */
+    @JSProperty
+    JSString getOptimization();
 }
