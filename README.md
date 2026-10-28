@@ -1,5 +1,19 @@
 An offline Java compiler that runs in the browser.
 
+This repository is a fork of [TeaVM's `teavm-javac`](https://github.com/konsoletyper/teavm-javac).
+The `thrive-spike-patches` branch is one commit ahead of upstream `master` (`25bfa72`). It carries
+the following patches for interview-style Java programs:
+
+* **Javac compatibility:** repair `InnerClasses`/`OuterClass` metadata so nested collection types
+  such as `Map.Entry` and `AbstractMap.SimpleEntry` resolve, and match the JDK by making
+  `Iterator.remove()` non-abstract.
+* **Locale and compiler options:** correctly set locale properties in the compiler and expose the
+  TeaVM optimization level through the JavaScript API and worker protocol.
+* **Standard-library overlays:** fix `DecimalFormatSymbols.clone()`, `Math.round()`/`Math.rint()`,
+  and `Random.nextInt(bound)`/`nextBoolean()`.
+* **Formatter support:** add the overlay implementation for `%n`, `%e`, `%%`, and half-up `%f`
+  formatting.
+
 This is two compilers in one WebAssembly module:
 
 * Java compiler from OpenJDK
